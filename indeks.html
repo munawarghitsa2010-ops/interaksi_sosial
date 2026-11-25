@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BOMBER HERO – Misi Menaklukkan Interaksi Sosial</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter & Press Start 2P for Arcade Vibe -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Press+Start+2P&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        fredoka: ['Fredoka', 'cursive'],
+                        arcade: ['"Press Start 2P"', 'monospace']
+                    },
+                    colors: {
+                        brand: {
+                            green: '#10B981',
+                            yellow: '#F59E0B',
+                            red: '#EF4444',
+                            blue: '#3B82F6',
+                            purple: '#8B5CF6',
+                            dark: '#0F172A'
+                        }
+                    },
+                    animation: {
+                        'bounce-slow': 'bounce 2s infinite',
+                        'pulse-glow': 'pulseGlow 1.5s infinite alternate',
+                        'float': 'float 3s ease-in-out infinite',
+                        'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+                        'coin-spin': 'coinSpin 1s steps(8) infinite'
+                    },
+                    keyframes: {
+                        pulseGlow: {
+                            '0%': { boxShadow: '0 0 15px rgba(245, 158, 11, 0.4)' },
+                            '100%': { boxShadow: '0 0 30px rgba(245, 158, 11, 0.9)' }
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' }
+                        },
+                        shake: {
+                            '10%, 90%': { transform: 'translate3d(-2px, 0, 0)' },
+                            '20%, 80%': { transform: 'translate3d(4px, 0, 0)' },
+                            '30%, 50%, 70%': { transform: 'translate3d(-6px, 0, 0)' },
+                            '40%, 60%': { transform: 'translate3d(6px, 0, 0)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        
+        .game-card {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(12px);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-arcade {
+            transition: all 0.15s ease;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.3);
+        }
+        .btn-arcade:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+        }
+
+        /* Explosive Bomb Overlay */
+        .explosion-overlay {
+            background: radial-gradient(circle, rgba(239,68,68,0.8) 0%, rgba(245,158,11,0.5) 40%, rgba(0,0,0,0) 70%);
+        }
+
+        /* Touch Control D-Pad */
+        .d-pad-btn {
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-950 text-slate-100 font-sans h-full overflow-x-hidden flex flex-col justify-between selection:bg-amber-500 selection:text-slate-900">
+
+    <div id="bg-effects" class="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-30">
+        <div class="absolute -top-20 -left-20 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div class="absolute top-1/2 -right-20 w-96 h-96 bg-amber-500/20 rounded-full blur-3xl animate-pulse delay-700"></div>
+        <div class="absolute -bottom-20 left-1/3 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+    </div>
+
+    <header class="relative z-20 bg-slate-900/90 border-b border-slate-800 px-4 py-3 flex items-center justify-between backdrop-blur-md">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="app.navTo('home')">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-amber-400 p-0.5 shadow-lg flex items-center justify-center font-arcade text-xs text-slate-950 font-bold">
+                🐸
+            </div>
+            <div>
+                <h1 class="font-fredoka text-lg md:text-xl font-bold bg-gradient-to-r from-emerald-400 via-amber-300 to-amber-500 bg-clip-text text-transparent leading-none">
+                    BOMBER HERO
+                </h1>
+                <p class="text-[10px] md:text-xs text-slate-400 font-medium">Interaksi Sosial • Sosiologi Kelas X</p>
+            </div>
+        </div>
+
+        <!-- Global Header Controls -->
+        <div class="flex items-center space-x-2">
+            <div id="header-player-badge" class="hidden sm:flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700 text-xs">
+                <span class="text-amber-400 font-bold">👤</span>
+                <span id="header-player-name" class="font-semibold text-slate-200">Siswa</span>
+                <span id="header-player-class" class="text-[10px] bg-slate-700 px-2 py-0.5 rounded text-amber-300 font-mono">-</span>
+            </div>
+            <button id="btn-audio" onclick="audioSystem.toggleBGM()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 transition-colors border border-slate-700 flex items-center space-x-1" title="Musik / Sound">
+                <span id="audio-icon">🎵</span>
+                <span id="audio-status-text" class="text-xs hidden sm:inline font-semibold">BGM ON</span>
+            </button>
+            <button onclick="app.toggleFullscreen()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 transition-colors border border-slate-700" title="Layar Penuh">
+                ⛶
+            </button>
+            <button onclick="app.openModal('modal-help')" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-blue-400 transition-colors border border-slate-700" title="Petunjuk">
+                ❓
+            </button>
+        </div>
+    </header>
+
+    <main id="main-container" class="relative z-10 flex-1 flex flex-col p-3 md:p-6 max-w-7xl mx-auto w-full">
+
+        <!-- ==================== PAGE: COVER / HOME ==================== -->
+        <section id="page-home" class="flex-1 flex flex-col items-center justify-center text-center py-6 space-y-8">
+            <div class="space-y-3 max-w-2xl">
+                <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold uppercase tracking-wider">
+                    <span>🌟 Media Pembelajaran Sosiologi Fase E</span>
+                </div>
+                <h1 class="text-4xl md:text-6xl font-fredoka font-bold text-white tracking-wide drop-shadow-md">
+                    BOMBER HERO
+                </h1>
+                <h2 class="text-xl md:text-2xl font-bold text-amber-400 font-sans tracking-tight">
+                    MISI MENAKLUKKAN INTERAKSI SOSIAL
+                </h2>
+                <p class="text-slate-300 text-sm md:text-base leading-relaxed">
+                    Bantu Frog Hero menjelajahi arena, meledakkan rintangan materi, dan menjawab tantangan seputar kontak sosial, komunikasi, faktor, serta bentuk interaksi sosial!
+                </p>
+            </div>
+
+            <!-- Mascot & Visual Arcade Scene -->
+            <div class="relative w-64 h-64 md:w-80 md:h-80 flex items-center justify-center">
+                <!-- Glowing Arcade Frame -->
+                <div class="absolute inset-0 bg-gradient-to-tr from-emerald-500/20 via-amber-500/20 to-purple-500/20 rounded-3xl blur-xl animate-pulse"></div>
+                <div class="relative z-10 w-full h-full game-card rounded-3xl p-6 flex flex-col items-center justify-around border border-amber-500/30">
+                    <!-- Hero Animated SVG -->
+                    <div class="animate-float">
+                        <svg class="w-32 h-32 md:w-40 md:h-40 drop-shadow-[0_10px_20px_rgba(16,185,129,0.5)]" viewBox="0 0 100 100">
+                            <!-- Frog Body -->
+                            <ellipse cx="50" cy="55" rx="35" ry="28" fill="#10B981" />
+                            <ellipse cx="50" cy="62" rx="22" ry="18" fill="#A7F3D0" />
+                            <!-- Eyes -->
+                            <circle cx="32" cy="32" r="14" fill="#10B981" />
+                            <circle cx="68" cy="32" r="14" fill="#10B981" />
+                            <circle cx="32" cy="32" r="9" fill="#FFFFFF" />
+                            <circle cx="68" cy="32" r="9" fill="#FFFFFF" />
+                            <circle cx="34" cy="32" r="5" fill="#0F172A" />
+                            <circle cx="66" cy="32" r="5" fill="#0F172A" />
+                            <!-- Hero Helmet / Crown -->
+                            <path d="M 35 22 L 50 10 L 65 22 Z" fill="#F59E0B" />
+                            <circle cx="50" cy="14" r="3" fill="#EF4444" />
+                            <!-- Cheeks -->
+                            <circle cx="28" cy="54" r="5" fill="#F472B6" opacity="0.6" />
+                            <circle cx="72" cy="54" r="5" fill="#F472B6" opacity="0.6" />
+                            <!-- Mouth -->
+                            <path d="M 40 58 Q 50 66 60 58" fill="none" stroke="#064E3B" stroke-width="3" stroke-linecap="round" />
+                            <!-- Hero Belt with Bomb Icon -->
+                            <rect x="25" y="70" width="50" height="8" rx="4" fill="#1E293B" />
+                            <circle cx="50" cy="74" r="5" fill="#F59E0B" />
+                        </svg>
+                    </div>
+
+                    <!-- Floating Coins & Bomb Sprites -->
+                    <div class="flex items-center space-x-6 text-xl">
+                        <span class="animate-bounce text-2xl" style="animation-delay: 0.1s;">💣</span>
+                        <span class="animate-bounce text-2xl text-amber-400 font-bold" style="animation-delay: 0.3s;">🪙 Rp100k</span>
+                        <span class="animate-bounce text-2xl" style="animation-delay: 0.5s;">⭐</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Home Actions Buttons -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-md">
+                <button onclick="app.openPlayerProfileModal()" class="btn-arcade bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-bold py-4 px-6 rounded-2xl text-lg flex items-center justify-center space-x-2 shadow-lg shadow-emerald-500/25">
+                    <span>▶</span>
+                    <span>MULAI PETUALANGAN</span>
+                </button>
+                <button onclick="app.openModal('modal-help')" class="btn-arcade bg-slate-800 hover:bg-slate-700 text-amber-400 font-semibold py-4 px-6 rounded-2xl text-base flex items-center justify-center space-x-2 border border-slate-700">
+                    <span>📖</span>
+                    <span>PETUNJUK PERMAINAN</span>
+                </button>
+                <button onclick="app.openModal('modal-objective')" class="btn-arcade bg-slate-800 hover:bg-slate-700 text-blue-400 font-semibold py-4 px-6 rounded-2xl text-base flex items-center justify-center space-x-2 border border-slate-700">
+                    <span>🎯</span>
+                    <span>TUJUAN PEMBELAJARAN</span>
+                </button>
+                <button onclick="app.openModal('modal-settings')" class="btn-arcade bg-slate-800 hover:bg-slate-700 text-purple-400 font-semibold py-4 px-6 rounded-2xl text-base flex items-center justify-center space-x-2 border border-slate-700">
+                    <span>⚙</span>
+                    <span>PENGATURAN</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== PAGE: MODE SELECTION ==================== -->
+        <section id="page-mode-select" class="hidden flex-1 flex flex-col justify-center space-y-6 py-6">
+            <div class="text-center space-y-2">
+                <button onclick="app.navTo('home')" class="text-xs text-slate-400 hover:text-white flex items-center justify-center mx-auto space-x-1">
+                    <span>← Kembali ke Menu Utama</span>
+                </button>
+                <h2 class="text-3xl md:text-4xl font-fredoka font-bold text-amber-400">
+                    PILIH MODE BERMAIN
+                </h2>
+                <p class="text-slate-300 text-sm">Pilih gaya bertarung dan menaklukkan tantangan Interaksi Sosial!</p>
+            </div>
+
+            <!-- Mode Selection Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Solo Mode -->
+                <div onclick="app.selectMode('solo')" class="game-card hover:border-emerald-500 p-6 rounded-3xl cursor-pointer transform hover:-translate-y-2 transition-all flex flex-col justify-between space-y-6 group">
+                    <div class="space-y-4">
+                        <div class="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-3xl font-bold group-hover:scale-110 transition-transform">
+                            🧑
+                        </div>
+                        <div>
+                            <span class="text-xs font-bold text-emerald-400 uppercase tracking-widest">Single Player</span>
+                            <h3 class="text-2xl font-bold text-white mt-1">SOLO MODE</h3>
+                            <p class="text-xs text-slate-300 mt-2 leading-relaxed">
+                                Berpetualang sendiri, kuasai semua tantangan dan selesaikan seluruh misi Interaksi Sosial.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="space-y-2 border-t border-slate-800 pt-4 text-xs text-slate-400">
+                        <div class="flex justify-between"><span>Layar:</span> <span class="text-white font-semibold">1 Arena Penuh</span></div>
+                        <div class="flex justify-between"><span>Kontrol:</span> <span class="text-white font-semibold">Keyboard / Touch</span></div>
+                    </div>
+                    <button class="w-full py-3 rounded-xl bg-emerald-500 text-slate-950 font-bold group-hover:bg-emerald-400 transition-colors">
+                        PILIH SOLO
+                    </button>
+                </div>
+
+                <!-- Duel Mode -->
+                <div onclick="app.selectMode('duel')" class="game-card hover:border-amber-500 p-6 rounded-3xl cursor-pointer transform hover:-translate-y-2 transition-all flex flex-col justify-between space-y-6 group">
+                    <div class="space-y-4">
+                        <div class="w-14 h-14 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-3xl font-bold group-hover:scale-110 transition-transform">
+                            ⚔
+                        </div>
+                        <div>
+                            <span class="text-xs font-bold text-amber-400 uppercase tracking-widest">2 Players Split-Screen</span>
+                            <h3 class="text-2xl font-bold text-white mt-1">DUEL MODE</h3>
+                            <p class="text-xs text-slate-300 mt-2 leading-relaxed">
+                                Bersaing secara langsung dengan teman dalam satu perangkat! Siapa paling cerdas & cepat?
+                            </p>
+                        </div>
+                    </div>
+                    <div class="space-y-2 border-t border-slate-800 pt-4 text-xs text-slate-400">
+                        <div class="flex justify-between"><span>Layar:</span> <span class="text-white font-semibold">Vertical Split Screen</span></div>
+                        <div class="flex justify-between"><span>P1 Control:</span> <span class="text-white font-semibold">WASD / Touch L</span></div>
+                        <div class="flex justify-between"><span>P2 Control:</span> <span class="text-white font-semibold">Arrow / Touch R</span></div>
+                    </div>
+                    <button class="w-full py-3 rounded-xl bg-amber-500 text-slate-950 font-bold group-hover:bg-amber-400 transition-colors">
+                        PILIH DUEL
+                    </button>
+                </div>
+
+                <!-- Squad Mode -->
+                <div onclick="app.selectMode('squad')" class="game-card hover:border-purple-500 p-6 rounded-3xl cursor-pointer transform hover:-translate-y-2 transition-all flex flex-col justify-between space-y-6 group">
+                    <div class="space-y-4">
+                        <div class="w-14 h-14 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-3xl font-bold group-hover:scale-110 transition-transform">
+                            👥
+                        </div>
+                        <div>
+                            <span class="text-xs font-bold text-purple-400 uppercase tracking-widest">3-4 Players Team Grid</span>
+                            <h3 class="text-2xl font-bold text-white mt-1">SQUAD MODE</h3>
+                            <p class="text-xs text-slate-300 mt-2 leading-relaxed">
+                                Bermain bersama dalam tim (3–4 pemain) dalam grid arena interaktif untuk rekor tim tertinggi!
+                            </p>
+                        </div>
+                    </div>
+                    <div class="space-y-2 border-t border-slate-800 pt-4 text-xs text-slate-400">
+                        <div class="flex justify-between"><span>Layar:</span> <span class="text-white font-semibold">Grid 2x2 Layout</span></div>
+                        <div class="flex justify-between"><span>Pemain:</span> <span class="text-white font-semibold">3 - 4 Hero Frog</span></div>
+                    </div>
+                    <button class="w-full py-3 rounded-xl bg-purple-500 text-slate-950 font-bold group-hover:bg-purple-400 transition-colors">
+                        PILIH SQUAD
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== PAGE: LEVEL MAP / MATERIAL VIEW ==================== -->
+        <section id="page-material" class="hidden flex-1 flex flex-col space-y-6 py-4">
+            <!-- Header bar level -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900 p-4 rounded-2xl border border-slate-800">
+                <div class="flex items-center space-x-3">
+                    <span id="material-level-badge" class="px-3 py-1 rounded-xl bg-amber-500 text-slate-950 font-bold font-arcade text-xs">
+                        LEVEL 1
+                    </span>
+                    <div>
+                        <h3 id="material-level-title" class="text-xl font-bold text-white font-fredoka">
+                            Pengertian & Ciri-Ciri Interaksi Sosial
+                        </h3>
+                        <!-- 10 Minute Reading Timer Badge -->
+                        <p id="reading-timer-badge" class="text-xs text-amber-400 font-semibold mt-1 flex items-center space-x-1">
+                            <span>⏱️ Wajib Membaca Materi:</span>
+                            <span id="reading-timer-clock" class="font-mono font-bold bg-amber-500/20 px-2 py-0.5 rounded text-amber-300">10:00</span>
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                    <!-- Teacher / Dev Bypass Button -->
+                    <button onclick="app.bypassMaterialTimer()" class="text-[10px] text-slate-400 hover:text-amber-400 underline py-1 px-2">
+                        🔑 Bypass Guru (Skip)
+                    </button>
+                    <!-- Start Challenge Button (Disabled until 10 mins pass) -->
+                    <button id="btn-start-challenge" disabled onclick="app.startLevelChallenge()" class="btn-arcade bg-gradient-to-r from-emerald-500 to-emerald-600 opacity-50 cursor-not-allowed text-slate-950 font-bold py-2.5 px-6 rounded-xl text-sm flex items-center space-x-2 w-full sm:w-auto justify-center transition-all">
+                        <span>🚀</span>
+                        <span id="btn-start-text">MAMBACA MATERI (10:00)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Material Content Container -->
+            <div id="material-body" class="game-card p-6 md:p-8 rounded-3xl space-y-6 overflow-y-auto max-h-[65vh] border border-slate-700/50">
+                <!-- Injected via JavaScript -->
+            </div>
+        </section>
+
+        <!-- ==================== PAGE: GAME ARENA ==================== -->
+        <section id="page-arena" class="hidden flex-1 flex flex-col space-y-4">
+            
+            <!-- Top Game Status Header -->
+            <div class="bg-slate-900/90 p-3 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs md:text-sm">
+                <!-- Level Badge & Title -->
+                <div class="flex items-center space-x-2">
+                    <span id="arena-level-badge" class="px-2.5 py-1 rounded-lg bg-emerald-500 text-slate-950 font-bold font-arcade text-[10px]">
+                        LV 1
+                    </span>
+                    <span id="arena-level-title" class="font-bold text-slate-200 hidden sm:inline">
+                        Pengertian Interaksi Sosial
+                    </span>
+                </div>
+
+                <!-- Global Progress Bar -->
+                <div class="flex-1 max-w-xs mx-2">
+                    <div class="flex justify-between text-[10px] text-slate-400 mb-1 font-semibold">
+                        <span>PROGRESS LEVEL</span>
+                        <span id="arena-progress-text">0%</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-700">
+                        <div id="arena-progress-bar" class="h-full bg-gradient-to-r from-emerald-500 to-amber-400 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- 90s Question Timer Badge -->
+                <div id="question-timer-box" class="px-3 py-1 rounded-full bg-red-500/20 border border-red-500/50 text-red-400 font-bold text-xs flex items-center space-x-1">
+                    <span>⏱️</span>
+                    <span id="q-timer-text" class="font-mono text-sm">90s</span>
+                </div>
+
+                <!-- Active Mode Indicator -->
+                <div id="arena-mode-tag" class="px-3 py-1 rounded-full bg-slate-800 border border-slate-700 font-bold text-amber-400 text-xs">
+                    SOLO MODE
+                </div>
+            </div>
+
+            <!-- Question Card Area -->
+            <div id="question-container" class="game-card p-4 md:p-6 rounded-3xl border border-amber-500/30 shadow-xl space-y-3">
+                <div class="flex items-center justify-between text-xs text-amber-400 font-bold">
+                    <span id="q-counter">PERTANYAAN 1 / 10</span>
+                    <span id="q-type-badge" class="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 uppercase">Pilihan Ganda</span>
+                </div>
+                <h3 id="q-text" class="text-base md:text-xl font-bold text-white leading-relaxed">
+                    Memuat pertanyaan...
+                </h3>
+            </div>
+
+            <!-- Dynamic Gameplay Area (Adapts for Solo, Duel Split-Screen, or Squad Grid) -->
+            <div id="game-viewports-container" class="flex-1 min-h-[380px] grid grid-cols-1 gap-4">
+                <!-- Injected via JavaScript based on Selected Mode -->
+            </div>
+
+            <!-- Mobile Virtual D-Pad Touch Controls (Visible on smaller touch screens) -->
+            <div id="virtual-controls" class="block md:hidden bg-slate-900/80 p-3 rounded-2xl border border-slate-800">
+                <div class="text-center text-[10px] text-slate-400 mb-2">Navigasi Katak Hero (Sentuh / Klik Pilihan)</div>
+                <div class="flex items-center justify-center space-x-2">
+                    <button onclick="app.movePlayer('UP')" class="d-pad-btn p-3 bg-slate-800 active:bg-amber-500 rounded-xl font-bold text-lg w-12 h-12 flex items-center justify-center border border-slate-700">⬆️</button>
+                    <button onclick="app.movePlayer('DOWN')" class="d-pad-btn p-3 bg-slate-800 active:bg-amber-500 rounded-xl font-bold text-lg w-12 h-12 flex items-center justify-center border border-slate-700">⬇️</button>
+                    <button onclick="app.movePlayer('LEFT')" class="d-pad-btn p-3 bg-slate-800 active:bg-amber-500 rounded-xl font-bold text-lg w-12 h-12 flex items-center justify-center border border-slate-700">⬅️</button>
+                    <button onclick="app.movePlayer('RIGHT')" class="d-pad-btn p-3 bg-slate-800 active:bg-amber-500 rounded-xl font-bold text-lg w-12 h-12 flex items-center justify-center border border-slate-700">➡️</button>
+                    <button onclick="app.interactPlayer()" class="d-pad-btn p-3 bg-emerald-500 text-slate-950 font-bold rounded-xl text-sm h-12 px-4 shadow-lg flex items-center justify-center">💣 PILIH</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== PAGE: GAME RESULTS ==================== -->
+        <section id="page-result" class="hidden flex-1 flex flex-col items-center justify-center text-center py-6 space-y-6">
+            <div class="game-card p-8 rounded-3xl max-w-xl w-full space-y-6 border border-amber-500/40 relative overflow-hidden">
+                <div class="absolute -top-12 -right-12 text-9xl opacity-10">🏆</div>
+                
+                <div class="space-y-2">
+                    <span id="result-badge" class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xs uppercase tracking-widest border border-emerald-500/40">
+                        MISSION ACCOMPLISHED
+                    </span>
+                    <h2 id="result-title" class="text-3xl md:text-4xl font-fredoka font-bold text-amber-400">
+                        🎉 SELAMAT HERO!
+                    </h2>
+                    <p id="result-subtitle" class="text-slate-300 text-sm">
+                        Kamu telah berhasil menaklukkan tantangan Interaksi Sosial!
+                    </p>
+
+                    <!-- Student Identity Card in Results -->
+                    <div class="bg-slate-900/90 p-3 rounded-2xl border border-slate-700 flex items-center justify-between text-xs text-slate-300 my-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-base">🎓</span>
+                            <div>
+                                <span id="res-student-name" class="font-bold text-amber-300 block text-left">Nama Siswa</span>
+                                <span id="res-student-class" class="text-[10px] text-slate-400 block text-left">Kelas X</span>
+                            </div>
+                        </div>
+                        <div id="spreadsheet-status-badge" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-400 border border-slate-700 text-[10px] font-semibold flex items-center space-x-1">
+                            <span>🔄</span> <span>Menyiapkan Data...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Summary Grid -->
+                <div class="grid grid-cols-2 gap-4 text-left">
+                    <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
+                        <span class="text-[10px] text-slate-400 uppercase font-bold">Total Score</span>
+                        <div id="res-score" class="text-2xl font-bold text-emerald-400 font-arcade">0 POIN</div>
+                    </div>
+                    <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
+                        <span class="text-[10px] text-slate-400 uppercase font-bold">Virtual Reward</span>
+                        <div id="res-reward" class="text-2xl font-bold text-amber-400 font-fredoka">Rp0</div>
+                    </div>
+                    <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
+                        <span class="text-[10px] text-slate-400 uppercase font-bold">Jawaban Benar</span>
+                        <div id="res-correct" class="text-xl font-bold text-emerald-400">0</div>
+                    </div>
+                    <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
+                        <span class="text-[10px] text-slate-400 uppercase font-bold">Akurasi</span>
+                        <div id="res-accuracy" class="text-xl font-bold text-blue-400">100%</div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                    <button onclick="app.restartGame()" class="btn-arcade flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-bold py-3.5 px-4 rounded-xl text-sm">
+                        🔄 MAIN LAGI
+                    </button>
+                    <button onclick="app.navTo('mode-select')" class="btn-arcade flex-1 bg-slate-800 hover:bg-slate-700 text-amber-400 font-semibold py-3.5 px-4 rounded-xl text-sm border border-slate-700">
+                        🎮 PILIH MODE LAIN
+                    </button>
+                    <button onclick="app.navTo('home')" class="btn-arcade flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-3.5 px-4 rounded-xl text-sm border border-slate-700">
+                        🏠 HOME
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==================== MODALS & POPUPS ==================== -->
+
+    <div id="modal-player-profile" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="game-card p-6 md:p-8 rounded-3xl max-w-md w-full space-y-5 border border-emerald-500/40 shadow-2xl animate-float">
+            <div class="text-center space-y-2 border-b border-slate-800 pb-3">
+                <div class="text-4xl">🐸📝</div>
+                <h3 class="text-2xl font-bold text-emerald-400 font-fredoka">Identitas Peserta Didik</h3>
+                <p class="text-xs text-slate-300">Isi Nama dan Kelas sebelum memulai permainan agar nilai tersimpan di laporan guru.</p>
+            </div>
+
+            <form onsubmit="app.savePlayerIdentity(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Nama Lengkap Siswa <span class="text-red-400">*</span></label>
+                    <input type="text" id="input-student-name" required placeholder="Contoh: Ahmad Raihan" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-emerald-400" />
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Kelas / Rombel <span class="text-red-400">*</span></label>
+                    <input type="text" id="input-student-class" required placeholder="Contoh: X IPS 1 / Fase E-2" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-emerald-400" />
+                </div>
+                
+                <div class="pt-2">
+                    <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-bold text-base btn-arcade shadow-lg shadow-emerald-500/20">
+                        SIMPAN & LANJUT PILIH MODE 🚀
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- MODAL: HELP / PETUNJUK -->
+    <div id="modal-help" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="game-card p-6 md:p-8 rounded-3xl max-w-lg w-full space-y-5 border border-amber-500/30">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-xl font-bold text-amber-400 font-fredoka flex items-center space-x-2">
+                    <span>📖</span><span>Petunjuk Permainan</span>
+                </h3>
+                <button onclick="app.closeModal('modal-help')" class="text-slate-400 hover:text-white font-bold text-lg">✕</button>
+            </div>
+            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed max-h-96 overflow-y-auto pr-2">
+                <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-800">
+                    <strong class="text-emerald-400 block mb-1">🎮 Cara Bermain Bomber Hero:</strong>
+                    1. Pelajari rangkuman materi Sosiologi di setiap awal Level.<br>
+                    2. Masuk ke Arena Game dan amati pertanyaan di bagian atas.<br>
+                    3. Gerakkan Frog Hero ke blok pilihan jawaban menggunakan tombol arah / keyboard (WASD atau Arrow Keys) atau klik/tap langsung pilihan jawaban.<br>
+                    4. Jawaban <strong>BENAR</strong>: Menerima reward virtual +Rp100.000, +100 poin, dan efek kejayaan.<br>
+                    5. Jawaban <strong>SALAH</strong>: Bom meledak! Nyawa berkurang dan penjelasan edukatif akan ditampilkan.
+                </div>
+                <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-800">
+                    <strong class="text-amber-400 block mb-1">⚔️ Duel & Squad Mode:</strong>
+                    • Dalam Mode Duel, Player 1 (WASD) bertanding langsung melawan Player 2 (Arrow Keys) dalam split-screen.<br>
+                    • Dalam Mode Squad, hingga 4 pemain dapat berpartisipasi menyelesaikan kuis secara bergantian/tim.
+                </div>
+            </div>
+            <button onclick="app.closeModal('modal-help')" class="w-full py-3 rounded-xl bg-amber-500 text-slate-950 font-bold">Paham, Siap Bermain!</button>
+        </div>
+    </div>
+
+    <!-- MODAL: TUJUAN PEMBELAJARAN -->
+    <div id="modal-objective" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="game-card p-6 md:p-8 rounded-3xl max-w-lg w-full space-y-5 border border-blue-500/30">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-xl font-bold text-blue-400 font-fredoka flex items-center space-x-2">
+                    <span>🎯</span><span>Tujuan Pembelajaran (Fase E)</span>
+                </h3>
+                <button onclick="app.closeModal('modal-objective')" class="text-slate-400 hover:text-white font-bold text-lg">✕</button>
+            </div>
+            <ul class="space-y-2 text-xs md:text-sm text-slate-300 list-disc list-inside max-h-80 overflow-y-auto">
+                <li>Menjelaskan pengertian interaksi sosial sebagai dasar kehidupan bermasyarakat.</li>
+                <li>Mengidentifikasi ciri-ciri interaksi sosial dalam kehidupan sehari-hari.</li>
+                <li>Menjelaskan syarat-syarat terjadinya interaksi sosial (Kontak Sosial & Komunikasi).</li>
+                <li>Menganalisis faktor-faktor yang memengaruhi interaksi sosial (Imitasi, Sugesti, Identifikasi, Simpati, Empati, Motivasi).</li>
+                <li>Mengidentifikasi & membedakan bentuk interaksi sosial Asosiatif dan Disosiatif.</li>
+            </ul>
+            <button onclick="app.closeModal('modal-objective')" class="w-full py-3 rounded-xl bg-blue-500 text-slate-950 font-bold">Mengerti</button>
+        </div>
+    </div>
+
+    <!-- MODAL: SETTINGS -->
+    <div id="modal-settings" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="game-card p-6 md:p-8 rounded-3xl max-w-lg w-full space-y-5 border border-purple-500/30">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-xl font-bold text-purple-400 font-fredoka flex items-center space-x-2">
+                    <span>⚙</span><span>Pengaturan & Integrasi Nilai</span>
+                </h3>
+                <button onclick="app.closeModal('modal-settings')" class="text-slate-400 hover:text-white font-bold text-lg">✕</button>
+            </div>
+            <div class="space-y-4 text-sm text-slate-300">
+                <div class="flex items-center justify-between p-3 bg-slate-900 rounded-xl">
+                    <span>Musik Latar (BGM Synthesizer)</span>
+                    <button onclick="audioSystem.toggleBGM()" class="px-3 py-1 bg-amber-500 text-slate-950 font-bold rounded-lg text-xs">
+                        ON / OFF
+                    </button>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-slate-900 rounded-xl">
+                    <span>Efek Suara (SFX Lead/Boom)</span>
+                    <button onclick="audioSystem.toggleSFX()" class="px-3 py-1 bg-emerald-500 text-slate-950 font-bold rounded-lg text-xs">
+                        ON / OFF
+                    </button>
+                </div>
+
+                <!-- Spreadsheet Config for Teacher -->
+                <div class="p-4 bg-slate-900 rounded-2xl border border-slate-800 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-amber-400">📊 Webhook Google Spreadsheet (Guru)</span>
+                        <button onclick="app.openModal('modal-spreadsheet-guide')" class="text-[11px] text-blue-400 underline hover:text-blue-300">
+                            📖 Panduan Kode Apps Script
+                        </button>
+                    </div>
+                    <input type="url" id="input-gsheet-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-purple-400 font-mono" />
+                    <button onclick="app.saveSpreadsheetUrl()" class="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl transition-colors">
+                        💾 Simpan URL Google Sheets
+                    </button>
+                </div>
+            </div>
+            <button onclick="app.closeModal('modal-settings')" class="w-full py-3 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold">Tutup</button>
+        </div>
+    </div>
+
+    <div id="modal-spreadsheet-guide" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="game-card p-6 md:p-8 rounded-3xl max-w-2xl w-full space-y-4 border border-blue-500/40 max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-xl font-bold text-blue-400 font-fredoka flex items-center space-x-2">
+                    <span>📊</span><span>Panduan Menyimpan Nilai ke Google Sheets</span>
+                </h3>
+                <button onclick="app.closeModal('modal-spreadsheet-guide')" class="text-slate-400 hover:text-white font-bold text-lg">✕</button>
+            </div>
+            
+            <div class="space-y-3 text-xs text-slate-300 leading-relaxed">
+                <p>Ikuti 4 langkah mudah ini agar nilai seluruh siswa otomatis masuk ke Google Spreadsheet Anda:</p>
+                <ol class="list-decimal list-inside space-y-2 bg-slate-900 p-4 rounded-2xl border border-slate-800">
+                    <li>Buat Spreadsheet Baru di <strong class="text-emerald-400">Google Drive</strong> Anda.</li>
+                    <li>Klik menu <strong class="text-amber-400">Ekstensi (Extensions)</strong> &rarr; <strong class="text-amber-400">Apps Script</strong>.</li>
+                    <li>Hapus semua kode lama, lalu salin (copy) kode di bawah ini ke dalam editor Apps Script.</li>
+                    <li>Klik <strong class="text-blue-400">Terapkan (Deploy)</strong> &rarr; <strong class="text-blue-400">Penerapan Baru (New Deployment)</strong> &rarr; Pilih Jenis: <strong class="text-blue-400">Aplikasi Web (Web App)</strong> &rarr; Akses (Who has access): <strong class="text-emerald-400">Siapa Saja (Anyone)</strong> &rarr; Klik Deploy dan salin URL Web App yang dihasilkan ke input pengaturan game.</li>
+                </ol>
+
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-emerald-400">Kode Google Apps Script:</span>
+                        <button onclick="app.copyAppsScriptCode()" class="px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px]">
+                            📋 Salin Kode Script
+                        </button>
+                    </div>
+                    <pre id="apps-script-code" class="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-[11px] text-emerald-300 overflow-x-auto selection:bg-emerald-500 selection:text-slate-950">function doPost(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var data = JSON.parse(e.postData.contents);
+    
+    // Header otomatis jika sheet masih kosong
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(["Waktu", "Nama Siswa", "Kelas", "Mode Game", "Level / Status", "Total Poin", "Virtual Reward", "Benar", "Salah", "Akurasi"]);
+    }
+    
+    sheet.appendRow([
+      new Date(),
+      data.nama || "-",
+      data.kelas || "-",
+      data.mode || "SOLO",
+      data.level || "SELESAI",
+      data.score || 0,
+      "Rp" + (data.reward || 0).toLocaleString("id-ID"),
+      data.correct || 0,
+      data.wrong || 0,
+      data.accuracy || "0%"
+    ]);
+    
+    return ContentService.createTextOutput(JSON.stringify({"result":"success"})).setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({"result":"error", "error": err.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}</pre>
+                </div>
+            </div>
+            <button onclick="app.closeModal('modal-spreadsheet-guide')" class="w-full py-3 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold">Tutup</button>
+        </div>
+    </div>
+
+    <!-- MODAL: LEVEL FAILED (UNDER 50% CORRECT) -->
+    <div id="modal-level-failed" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="game-card p-6 md:p-8 rounded-3xl max-w-md w-full space-y-5 text-center border-2 border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.4)]">
+            <div class="text-6xl animate-bounce">
+                💥
+            </div>
+            <h3 class="text-2xl font-bold text-red-500 font-fredoka">
+                LEVEL GAGAL / UNTUK DILANJUTKAN!
+            </h3>
+            <p id="level-failed-desc" class="text-xs md:text-sm text-slate-300 bg-slate-900/90 p-4 rounded-2xl border border-slate-800 leading-relaxed text-left">
+                Jawaban benar kamu kurang dari 50% di level ini. Silakan baca materi kembali selama 10 menit dan ulangi level ini!
+            </p>
+            <button onclick="app.retryCurrentLevel()" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-sm btn-arcade">
+                📖 BACA MATERI & ULANGI LEVEL
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL: ANSWER FEEDBACK (EXPLOSION OR SUCCESS) -->
+    <div id="modal-feedback" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-lg hidden flex items-center justify-center p-4">
+        <div id="feedback-card" class="game-card p-6 md:p-8 rounded-3xl max-w-md w-full space-y-5 text-center border-2 transform transition-all">
+            <div id="feedback-icon" class="text-6xl animate-bounce">
+                💥
+            </div>
+            <h3 id="feedback-title" class="text-2xl font-bold font-fredoka">
+                BOOM! Jawaban Kurang Tepat!
+            </h3>
+            <p id="feedback-explanation" class="text-xs md:text-sm text-slate-300 bg-slate-900/90 p-4 rounded-2xl border border-slate-800 text-left leading-relaxed">
+                Penjelasan interaktif...
+            </p>
+            <button id="feedback-btn" onclick="app.nextQuestion()" class="w-full py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm btn-arcade">
+                LANJUT PERTANYAAN
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer Credit -->
+    <footer class="relative z-10 py-2 text-center text-[11px] text-slate-500 border-t border-slate-900">
+        BOMBER HERO • Interactive Sociology Learning Media Phase E Class X • Created with HTML5 Canvas & Web Audio API
+    </footer>
+
+    <script>
+        class AudioSystem {
+            constructor() {
+                this.ctx = null;
+                this.bgmEnabled = true;
+                this.sfxEnabled = true;
+                this.bgmInterval = null;
+            }
+
+            initCtx() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) {
+                        this.ctx = new AudioContext();
+                    }
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playCoin() {
+                if (!this.sfxEnabled) return;
+                this.initCtx();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(987.77, now); // B5
+                osc.frequency.setValueAtTime(1318.51, now + 0.08); // E6
+
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+
+            playExplosion() {
+                if (!this.sfxEnabled) return;
+                this.initCtx();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                // White noise buffer for explosion rumble
+                const bufferSize = this.ctx.sampleRate * 0.5;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(800, now);
+                filter.frequency.exponentialRampToValueAtTime(30, now + 0.5);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.5, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                noise.start(now);
+                noise.stop(now + 0.5);
+            }
+
+            playWin() {
+                if (!this.sfxEnabled) return;
+                this.initCtx();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.15, now + idx * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.1);
+                    osc.stop(now + idx * 0.1 + 0.25);
+                });
+            }
+
+            toggleBGM() {
+                this.bgmEnabled = !this.bgmEnabled;
+                const btnText = document.getElementById('audio-status-text');
+                const icon = document.getElementById('audio-icon');
+                if (this.bgmEnabled) {
+                    if (btnText) btnText.innerText = "BGM ON";
+                    if (icon) icon.innerText = "🎵";
+                    this.startBGM();
+                } else {
+                    if (btnText) btnText.innerText = "BGM OFF";
+                    if (icon) icon.innerText = "🔇";
+                    this.stopBGM();
+                }
+            }
+
+            toggleSFX() {
+                this.sfxEnabled = !this.sfxEnabled;
+            }
+
+            startBGM() {
+                if (this.bgmInterval) return;
+                this.initCtx();
+                let noteIndex = 0;
+                const melody = [261.63, 329.63, 392.00, 329.63, 261.63, 392.00, 329.63, 220.00];
+                this.bgmInterval = setInterval(() => {
+                    if (!this.bgmEnabled || !this.ctx) return;
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = melody[noteIndex % melody.length];
+                    gain.gain.setValueAtTime(0.03, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                    noteIndex++;
+                }, 400);
+            }
+
+            stopBGM() {
+                if (this.bgmInterval) {
+                    clearInterval(this.bgmInterval);
+                    this.bgmInterval = null;
+                }
+            }
+        }
+
+        const audioSystem = new AudioSystem();
+    </script>
+
+    <script>
+        const gameData = {
+            level1: {
+                title: "Pengertian & Ciri-Ciri Interaksi Sosial",
+                materialHtml: `
+                    <div class="space-y-4">
+                        <div class="bg-slate-900/90 p-4 rounded-2xl border border-emerald-500/30">
+                            <h4 class="text-lg font-bold text-emerald-400 mb-2">A. Pengertian Interaksi Sosial</h4>
+                            <p class="text-sm text-slate-300 leading-relaxed">
+                                Interaksi sosial adalah <strong>hubungan timbal balik</strong> (aksi dan reaksi) antara individu dengan individu, individu dengan kelompok, atau kelompok dengan kelompok. Manusia membutuhkan interaksi karena berstatus sebagai <em>makhluk sosial</em>.
+                            </p>
+                        </div>
+                        <div class="bg-slate-900/90 p-4 rounded-2xl border border-amber-500/30">
+                            <h4 class="text-lg font-bold text-amber-400 mb-2">B. Ciri-Ciri Interaksi Sosial</h4>
+                            <ul class="text-sm text-slate-300 space-y-2 list-disc list-inside">
+                                <li><strong>Pelaku lebih dari satu orang</strong> (minimal 2 orang).</li>
+                                <li><strong>Terjadi komunikasi</strong> antar pelaku menggunakan simbol/bahasa.</li>
+                                <li><strong>Terdapat dimensi waktu</strong> (masa lalu, masa kini, dan masa depan).</li>
+                                <li><strong>Memiliki tujuan tertentu</strong> yang ingin dicapai para pelaku.</li>
+                                <li><strong>Terdapat reaksi/respon</strong> timbal balik antar pihak.</li>
+                            </ul>
+                        </div>
+                    </div>
+                `,
+                questions: [
+                    {
+                        id: 'l1_1',
+                        type: 'true_false',
+                        question: "Interaksi sosial hanya dapat terjadi antara dua orang saja dan tidak dapat terjadi antar kelompok.",
+                        options: ["BENAR", "SALAH"],
+                        answer: "SALAH",
+                        explanation: "Salah! Interaksi sosial dapat terjadi antara individu dengan individu, individu dengan kelompok, maupun antar kelompok."
+                    },
+                    {
+                        id: 'l1_2',
+                        type: 'true_false',
+                        question: "Komunikasi dan hubungan timbal balik merupakan unsur utama dalam proses interaksi sosial.",
+                        options: ["BENAR", "SALAH"],
+                        answer: "BENAR",
+                        explanation: "Benar! Tanpa komunikasi dan aksi-reaksi timbal balik, hubungan antarmanusia tidak dapat dikategorikan sebagai interaksi sosial."
+                    },
+                    {
+                        id: 'l1_3',
+                        type: 'true_false',
+                        question: "Seseorang yang berbicara sendiri di depan cermin tanpa respons orang lain sudah melakukan interaksi sosial.",
+                        options: ["BENAR", "SALAH"],
+                        answer: "SALAH",
+                        explanation: "Salah! Ciri utama interaksi sosial adalah melibatkan lebih dari satu orang dan menghasilkan hubungan timbal balik."
+                    },
+                    {
+                        id: 'l1_4',
+                        type: 'multiple_choice',
+                        question: "Manakah di bawah ini yang merupakan contoh interaksi sosial antara individu dengan kelompok?",
+                        options: [
+                            "A. Rina berbincang empat mata dengan ibunya",
+                            "B. Pak Guru sedang mengajar peserta didik di dalam kelas",
+                            "C. Tim Basket SMA A bertanding lawan Tim Basket SMA B",
+                            "D. Andi membaca buku sendirian di perpustakaan",
+                            "E. Budi melihat poster di jalan raya"
+                        ],
+                        answer: "B. Pak Guru sedang mengajar peserta didik di dalam kelas",
+                        explanation: "Pak Guru (Individu) berinteraksi dengan peserta didik di kelas (Kelompok)."
+                    },
+                    {
+                        id: 'l1_5',
+                        type: 'multiple_choice',
+                        question: "Dua kelompok suporter sepak bola sedang bermusyawarah melakukan deklarasi damai. Hal ini contoh interaksi...",
+                        options: [
+                            "A. Individu dengan Individu",
+                            "B. Individu dengan Kelompok",
+                            "C. Kelompok dengan Kelompok",
+                            "D. Kontak pasif semata",
+                            "E. Komunikasi searah"
+                        ],
+                        answer: "C. Kelompok dengan Kelompok",
+                        explanation: "Interaksi terjadi antara dua pihak yang masing-masing berbentuk kelompok suporter."
+                    }
+                ]
+            },
+            level2: {
+                title: "Syarat Interaksi Sosial (Kontak & Komunikasi)",
+                materialHtml: `
+                    <div class="space-y-4">
+                        <div class="bg-slate-900/90 p-4 rounded-2xl border border-blue-500/30">
+                            <h4 class="text-lg font-bold text-blue-400 mb-2">1. Kontak Sosial</h4>
+                            <p class="text-sm text-slate-300 leading-relaxed mb-2">
+                                Hubungan awal secara fisik atau simbolik. Kontak sosial terbagi dua:
+                            </p>
+                            <ul class="text-xs text-slate-300 space-y-1 list-disc list-inside">
+                                <li><strong>Primer:</strong> Kontak langsung bertatap muka (berjabat tangan, ngobrol langsung).</li>
+                                <li><strong>Sekunder:</strong> Kontak melalui media perantara (WhatsApp, telepon, kirim surat).</li>
+                            </ul>
+                        </div>
+                        <div class="bg-slate-900/90 p-4 rounded-2xl border border-amber-500/30">
+                            <h4 class="text-lg font-bold text-amber-400 mb-2">2. Komunikasi</h4>
+                            <p class="text-sm text-slate-300 leading-relaxed mb-2">
+                                Proses penyampaian dan penerimaan pesan sehingga menghasilkan pemahaman bersama.
+                            </p>
+                            <span class="text-xs text-slate-400 block font-semibold">5 Unsur Komunikasi: Komunikator, Pesan, Media, Komunikan, & Efek (Feedback).</span>
+                        </div>
+                    </div>
+                `,
+                questions: [
+                    {
+                        id: 'l2_1',
+                        type: 'multiple_choice',
+                        question: "Dua orang sahabat saling menyapa melalui video call aplikasi pesan. Jenis kontak sosial ini adalah...",
+                        options: [
+                            "A. Kontak Sosial Primer",
+                            "B. Kontak Sosial Sekunder",
+                            "C. Kontak Sosial Pasif",
+                            "D. Kontak Fisik Bertatap Muka",
+                            "E. Komunikasi Tanpa Media"
+                        ],
+                        answer: "B. Kontak Sosial Sekunder",
+                        explanation: "Video call menggunakan alat/media komunikasi perantara, sehingga merupakan kontak sosial sekunder."
+                    },
+                    {
+                        id: 'l2_2',
+                        type: 'fill_blank',
+                        question: "Dua syarat utama agar interaksi sosial dapat terjadi adalah Kontak Sosial dan ________.",
+                        answer: "Komunikasi",
+                        explanation: "Dua syarat mutlak terjadinya interaksi sosial menurut sosiologi adalah Kontak Sosial dan Komunikasi."
+                    },
+                    {
+                        id: 'l2_3',
+                        type: 'fill_blank',
+                        question: "Orang atau pihak yang menerima pesan dalam proses komunikasi disebut dengan ________.",
+                        answer: "Komunikan",
+                        explanation: "Pengirim pesan disebut Komunikator, sedangkan penerima pesan disebut Komunikan."
+                    },
+                    {
+                        id: 'l2_4',
+                        type: 'fill_blank',
+                        question: "Hubungan sosial yang terjadi secara bertatap muka dan bersentuhan fisik secara langsung disebut kontak sosial ________.",
+                        answer: "Primer",
+                        explanation: "Kontak sosial langsung tanpa alat perantara disebut kontak sosial Primer."
+                    }
+                ]
+            },
+            level3: {
+                title: "Faktor yang Memengaruhi Interaksi Sosial",
+                materialHtml: `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                        <div class="p-3 bg-slate-900 rounded-xl border border-slate-800"><strong class="text-amber-400 block">Imitasi:</strong> Meniru tindakan/gaya orang lain.</div>
+                        <div class="p-3 bg-slate-900 rounded-xl border border-slate-800"><strong class="text-emerald-400 block">Sugesti:</strong> Pengaruh/pandangan yang diterima tanpa berpikir kritis.</div>
+                        <div class="p-3 bg-slate-900 rounded-xl border border-slate-800"><strong class="text-blue-400 block">Identifikasi:</strong> Keinginan menjadi persis identik dengan idola.</div>
+                        <div class="p-3 bg-slate-900 rounded-xl border border-slate-800"><strong class="text-purple-400 block">Simpati:</strong> Perasaan tertarik/iba kepada kondisi orang lain.</div>
+                        <div class="p-3 bg-slate-900 rounded-xl border border-slate-800"><strong class="text-pink-400 block">Empati:</strong> Simpati mendalam disertai tindakan nyata merasakan beban orang lain.</div>
+                        <div class="p-3 bg-slate-900 rounded-xl border border-slate-800"><strong class="text-cyan-400 block">Motivasi:</strong> Dorongan positif untuk bergerak maju.</div>
+                    </div>
+                `,
+                questions: [
+                    {
+                        id: 'l3_1',
+                        type: 'multiple_choice',
+                        question: "Rina meniru gaya potongan rambut dan berpakaian penyanyi idolanya karena sangat mengaguminya. Faktor pendorong interaksi ini adalah...",
+                        options: [
+                            "A. Sugesti",
+                            "B. Empati",
+                            "C. Imitasi",
+                            "D. Motivasi",
+                            "E. Sympathy"
+                        ],
+                        answer: "C. Imitasi",
+                        explanation: "Imitasi adalah tindakan meniru penampilan atau perilaku orang lain."
+                    },
+                    {
+                        id: 'l3_2',
+                        type: 'drag_word',
+                        question: "Doni merasa bersedih saat melihat korban bencana alam, lalu ia menggalang dana dan turun langsung menjadi relawan. Faktor ini adalah...",
+                        words: ["IMITASI", "SUGESTI", "IDENTIFIKASI", "EMPATI"],
+                        answer: "EMPATI",
+                        explanation: "Empati ditandai dengan rasa iba yang mendalam diikuti tindakan nyata membantu."
+                    },
+                    {
+                        id: 'l3_3',
+                        type: 'drag_word',
+                        question: "Seorang pasien langsung merasa tenang dan yakin akan sembuh setelah mendengarkan nasihat dari dokter spesialis. Faktor pendorongnya adalah...",
+                        words: ["SUGESTI", "IDENTIFIKASI", "IMITASI", "MOTIVASI"],
+                        answer: "SUGESTI",
+                        explanation: "Sugesti adalah pengaruh psikologis dari figur otoritas yang diterima tanpa pemikiran kritis."
+                    }
+                ]
+            },
+            level4: {
+                title: "Bentuk-Bentuk Interaksi Sosial",
+                materialHtml: `
+                    <div class="space-y-4 text-xs md:text-sm">
+                        <div class="bg-slate-900/90 p-4 rounded-2xl border border-emerald-500/30">
+                            <h4 class="text-base font-bold text-emerald-400 mb-1">A. Asosiatif (Mengarah pada Persatuan)</h4>
+                            <p>• <strong>Kerja Sama:</strong> Gotong royong, musyawarah.<br>
+                               • <strong>Akomodasi:</strong> Penyelesaian konflik (mediasi, kompromi).<br>
+                               • <strong>Asimilasi:</strong> Pembauran dua budaya menghasilkan kebudayaan baru.<br>
+                               • <strong>Akulturasi:</strong> Pembauran budaya tanpa menghilangkan ciri budaya asli.</p>
+                        </div>
+                        <div class="bg-slate-900/90 p-4 rounded-2xl border border-red-500/30">
+                            <h4 class="text-base font-bold text-red-400 mb-1">B. Disosiatif (Mengarah pada Perpecahan)</h4>
+                            <p>• <strong>Persaingan (Kompetisi):</strong> Perebutan prestasi secara sportif.<br>
+                               • <strong>Kontravensi:</strong> Perasaan tidak suka/curiga tersembunyi.<br>
+                               • <strong>Konflik Sosial:</strong> Pertentangan terbuka diiringi ancaman/kekerasan.</p>
+                        </div>
+                    </div>
+                `,
+                questions: [
+                    {
+                        id: 'l4_1',
+                        type: 'multiple_choice',
+                        question: "Warga desa bahu-membahu membersihkan saluran air menjelang musim hujan secara gotong royong. Bentuk interaksi ini tergolong...",
+                        options: [
+                            "A. Interaksi Disosiatif - Konflik",
+                            "B. Interaksi Asosiatif - Kerja Sama",
+                            "C. Interaksi Disosiatif - Kontravensi",
+                            "D. Akomodasi Paksaan",
+                            "E. Asimilasi Budaya"
+                        ],
+                        answer: "B. Interaksi Asosiatif - Kerja Sama",
+                        explanation: "Gotong royong adalah bentuk nyata kerja sama yang mengarah pada kesatuan (asosiatif)."
+                    },
+                    {
+                        id: 'l4_2',
+                        type: 'drag_word',
+                        question: "Dua kelompok masyarakat yang berbeda latar belakang budaya hidup berdampingan secara harmonis hingga membentuk budaya baru bersama. Hal ini disebut...",
+                        words: ["ASIMILASI", "AKULTURASI", "KONTRAVENSI", "KONFLIK"],
+                        answer: "ASIMILASI",
+                        explanation: "Asimilasi adalah pembauran kebudayaan yang menghasilkan budaya baru khas."
+                    },
+                    {
+                        id: 'l4_3',
+                        type: 'drag_word',
+                        question: "Dua tim sepak bola bertanding sekuat tenaga untuk memperebutkan piala kejuaraan dengan tetap menjunjung keadilan dan aturan. Ini dinamakan...",
+                        words: ["PERSAINGAN", "KONFLIK", "KONTRAVENSI", "AKOMODASI"],
+                        answer: "PERSAINGAN",
+                        explanation: "Persaingan / kompetisi terjadi untuk mencapai kemenangan sesuai aturan tanpa niat menghancurkan lawan."
+                    }
+                ]
+            }
+        };
+    </script>
+
+    <script>
+        class BomberHeroApp {
+            constructor() {
+                this.currentLevelKey = 'level1';
+                this.currentQuestionIdx = 0;
+                this.mode = 'solo'; // solo, duel, squad
+                this.studentName = localStorage.getItem('bomber_student_name') || '';
+                this.studentClass = localStorage.getItem('bomber_student_class') || '';
+                this.spreadsheetUrl = localStorage.getItem('bomber_gsheet_url') || '';
+                this.players = [
+                    { id: 1, name: 'P1 Green Frog', color: '#10B981', hp: 3, score: 0, reward: 0, x: 0, y: 0 }
+                ];
+                
+                // Timers
+                this.materialTimer = null;
+                this.materialTimeLeft = 600; // 10 minutes = 600s
+                this.questionTimer = null;
+                this.questionTimeLeft = 90; // 90 seconds per question
+
+                // Level score tracker
+                this.levelCorrect = 0;
+                this.levelTotal = 0;
+
+                this.stats = { correct: 0, wrong: 0 };
+            }
+
+            init() {
+                this.setupKeyboard();
+                this.updateHeaderProfile();
+                
+                // Populate input fields if saved
+                const gsheetInput = document.getElementById('input-gsheet-url');
+                if (gsheetInput && this.spreadsheetUrl) {
+                    gsheetInput.value = this.spreadsheetUrl;
+                }
+            }
+
+            openPlayerProfileModal() {
+                const nameInput = document.getElementById('input-student-name');
+                const classInput = document.getElementById('input-student-class');
+                if (nameInput) nameInput.value = this.studentName;
+                if (classInput) classInput.value = this.studentClass;
+                this.openModal('modal-player-profile');
+            }
+
+            savePlayerIdentity(e) {
+                if (e) e.preventDefault();
+                const nameInput = document.getElementById('input-student-name');
+                const classInput = document.getElementById('input-student-class');
+                if (nameInput && classInput) {
+                    this.studentName = nameInput.value.trim();
+                    this.studentClass = classInput.value.trim();
+                    localStorage.setItem('bomber_student_name', this.studentName);
+                    localStorage.setItem('bomber_student_class', this.studentClass);
+                    this.updateHeaderProfile();
+                    this.closeModal('modal-player-profile');
+                    this.navTo('mode-select');
+                }
+            }
+
+            updateHeaderProfile() {
+                const badge = document.getElementById('header-player-badge');
+                const nameEl = document.getElementById('header-player-name');
+                const classEl = document.getElementById('header-player-class');
+                if (this.studentName) {
+                    if (badge) badge.classList.remove('hidden');
+                    if (nameEl) nameEl.innerText = this.studentName;
+                    if (classEl) classEl.innerText = this.studentClass || '-';
+                }
+            }
+
+            saveSpreadsheetUrl() {
+                const input = document.getElementById('input-gsheet-url');
+                if (input) {
+                    this.spreadsheetUrl = input.value.trim();
+                    localStorage.setItem('bomber_gsheet_url', this.spreadsheetUrl);
+                    alert("✅ URL Google Spreadsheet berhasil disimpan!");
+                }
+            }
+
+            copyAppsScriptCode() {
+                const codeText = document.getElementById('apps-script-code').innerText;
+                const tempTextArea = document.createElement('textarea');
+                tempTextArea.value = codeText;
+                document.body.appendChild(tempTextArea);
+                tempTextArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempTextArea);
+                alert("📋 Kode Google Apps Script berhasil disalin ke clipboard!");
+            }
+
+            submitToSpreadsheet() {
+                const statusBadge = document.getElementById('spreadsheet-status-badge');
+                if (!this.spreadsheetUrl) {
+                    if (statusBadge) {
+                        statusBadge.className = "px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-semibold flex items-center space-x-1";
+                        statusBadge.innerHTML = "<span>⚠️</span> <span>Spreadsheet Belum Dihubungkan Guru</span>";
+                    }
+                    return;
+                }
+
+                if (statusBadge) {
+                    statusBadge.className = "px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/40 text-[10px] font-semibold flex items-center space-x-1";
+                    statusBadge.innerHTML = "<span>⏳</span> <span>Mengirim Nilai...</span>";
+                }
+
+                const totalReward = this.players.reduce((acc, p) => acc + p.reward, 0);
+                const totalScore = this.players.reduce((acc, p) => acc + p.score, 0);
+                const totalAns = this.stats.correct + this.stats.wrong;
+                const accuracy = totalAns > 0 ? `${Math.round((this.stats.correct / totalAns) * 100)}%` : "100%";
+
+                const payload = {
+                    nama: this.studentName || 'Anonim',
+                    kelas: this.studentClass || '-',
+                    mode: this.mode.toUpperCase(),
+                    level: 'SELESAI (Level 1-4)',
+                    score: totalScore,
+                    reward: totalReward,
+                    correct: this.stats.correct,
+                    wrong: this.stats.wrong,
+                    accuracy: accuracy
+                };
+
+                fetch(this.spreadsheetUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).then(() => {
+                    if (statusBadge) {
+                        statusBadge.className = "px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-semibold flex items-center space-x-1";
+                        statusBadge.innerHTML = "<span>✅</span> <span>Nilai Terkirim ke Spreadsheet</span>";
+                    }
+                }).catch(err => {
+                    console.error("Spreadsheet error:", err);
+                    if (statusBadge) {
+                        statusBadge.className = "px-2.5 py-1 rounded-lg bg-red-500/20 text-red-300 border border-red-500/40 text-[10px] font-semibold flex items-center space-x-1";
+                        statusBadge.innerHTML = "<span>❌</span> <span>Gagal Mengirim Nilai</span>";
+                    }
+                });
+            }
+
+            navTo(pageId) {
+                const pages = ['page-home', 'page-mode-select', 'page-material', 'page-arena', 'page-result'];
+                pages.forEach(p => {
+                    const el = document.getElementById(p);
+                    if (el) el.classList.add('hidden');
+                });
+                const target = document.getElementById(`page-${pageId}`);
+                if (target) target.classList.remove('hidden');
+
+                if (pageId === 'material') {
+                    this.loadMaterial();
+                } else {
+                    if (this.materialTimer) {
+                        clearInterval(this.materialTimer);
+                        this.materialTimer = null;
+                    }
+                }
+            }
+
+            selectMode(modeType) {
+                this.mode = modeType;
+                audioSystem.playCoin();
+
+                if (modeType === 'solo') {
+                    this.players = [
+                        { id: 1, name: 'Player 1', color: '#10B981', hp: 3, score: 0, reward: 0 }
+                    ];
+                } else if (modeType === 'duel') {
+                    this.players = [
+                        { id: 1, name: 'Player 1 (Hijau)', color: '#10B981', hp: 3, score: 0, reward: 0 },
+                        { id: 2, name: 'Player 2 (Kuning)', color: '#F59E0B', hp: 3, score: 0, reward: 0 }
+                    ];
+                } else if (modeType === 'squad') {
+                    this.players = [
+                        { id: 1, name: 'P1 Katak Hijau', color: '#10B981', hp: 3, score: 0, reward: 0 },
+                        { id: 2, name: 'P2 Katak Kuning', color: '#F59E0B', hp: 3, score: 0, reward: 0 },
+                        { id: 3, name: 'P3 Katak Biru', color: '#3B82F6', hp: 3, score: 0, reward: 0 },
+                        { id: 4, name: 'P4 Katak Ungu', color: '#8B5CF6', hp: 3, score: 0, reward: 0 }
+                    ];
+                }
+
+                this.currentLevelKey = 'level1';
+                this.navTo('material');
+            }
+
+            loadMaterial() {
+                const data = gameData[this.currentLevelKey];
+                document.getElementById('material-level-badge').innerText = this.currentLevelKey.toUpperCase();
+                document.getElementById('material-level-title').innerText = data.title;
+                document.getElementById('material-body').innerHTML = data.materialHtml;
+
+                // Start 10-Minute Reading Countdown
+                this.startMaterialTimer();
+            }
+
+            startMaterialTimer() {
+                if (this.materialTimer) clearInterval(this.materialTimer);
+                this.materialTimeLeft = 600; // 10 minutes = 600 seconds
+                const startBtn = document.getElementById('btn-start-challenge');
+                const btnText = document.getElementById('btn-start-text');
+                const clockEl = document.getElementById('reading-timer-clock');
+
+                startBtn.disabled = true;
+                startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                startBtn.classList.remove('hover:from-emerald-400', 'hover:to-emerald-500');
+
+                const updateTimerDisplay = () => {
+                    const mins = Math.floor(this.materialTimeLeft / 60);
+                    const secs = this.materialTimeLeft % 60;
+                    const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                    
+                    if (clockEl) clockEl.innerText = formatted;
+                    if (btnText) btnText.innerText = `MEMBACA MATERI (${formatted})`;
+
+                    if (this.materialTimeLeft <= 0) {
+                        clearInterval(this.materialTimer);
+                        this.materialTimer = null;
+                        startBtn.disabled = false;
+                        startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        startBtn.classList.add('hover:from-emerald-400', 'hover:to-emerald-500');
+                        if (btnText) btnText.innerText = "MULAI TANTANGAN ARENA";
+                        if (clockEl) clockEl.innerText = "SIAP! (00:00)";
+                    } else {
+                        this.materialTimeLeft--;
+                    }
+                };
+
+                updateTimerDisplay();
+                this.materialTimer = setInterval(updateTimerDisplay, 1000);
+            }
+
+            bypassMaterialTimer() {
+                if (this.materialTimer) {
+                    clearInterval(this.materialTimer);
+                    this.materialTimer = null;
+                }
+                this.materialTimeLeft = 0;
+                const startBtn = document.getElementById('btn-start-challenge');
+                const btnText = document.getElementById('btn-start-text');
+                const clockEl = document.getElementById('reading-timer-clock');
+
+                if (startBtn) {
+                    startBtn.disabled = false;
+                    startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+                if (btnText) btnText.innerText = "MULAI TANTANGAN ARENA";
+                if (clockEl) clockEl.innerText = "BYPASS GURU";
+            }
+
+            startLevelChallenge() {
+                if (this.materialTimer) {
+                    clearInterval(this.materialTimer);
+                    this.materialTimer = null;
+                }
+                this.currentQuestionIdx = 0;
+                this.levelCorrect = 0;
+                this.levelTotal = 0;
+                this.navTo('arena');
+                this.renderArenaViewports();
+                this.loadQuestion();
+            }
+
+            renderArenaViewports() {
+                const container = document.getElementById('game-viewports-container');
+                container.innerHTML = '';
+                document.getElementById('arena-mode-tag').innerText = `${this.mode.toUpperCase()} MODE`;
+
+                if (this.mode === 'solo') {
+                    container.className = "flex-1 min-h-[380px] grid grid-cols-1 gap-4";
+                    container.appendChild(this.createViewportHTML(this.players[0]));
+                } else if (this.mode === 'duel') {
+                    container.className = "flex-1 min-h-[380px] grid grid-cols-1 md:grid-cols-2 gap-4";
+                    this.players.forEach(p => {
+                        container.appendChild(this.createViewportHTML(p));
+                    });
+                } else if (this.mode === 'squad') {
+                    container.className = "flex-1 min-h-[380px] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3";
+                    this.players.forEach(p => {
+                        container.appendChild(this.createViewportHTML(p));
+                    });
+                }
+            }
+
+            createViewportHTML(player) {
+                const card = document.createElement('div');
+                card.className = "game-card rounded-3xl p-4 flex flex-col justify-between border border-slate-700/60 relative overflow-hidden";
+                card.id = `player-viewport-${player.id}`;
+                card.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-3 h-3 rounded-full" style="background-color: ${player.color}"></span>
+                            <span class="font-bold text-xs text-slate-200">${player.name}</span>
+                        </div>
+                        <div class="flex items-center space-x-2 text-xs">
+                            <span class="text-red-400 font-bold">❤️ <span id="p-hp-${player.id}">${player.hp}</span></span>
+                            <span class="text-emerald-400 font-bold font-arcade"><span id="p-score-${player.id}">${player.score}</span> Pts</span>
+                        </div>
+                    </div>
+
+                    <!-- Virtual Frog Board / Answer Platform -->
+                    <div id="p-options-area-${player.id}" class="flex-1 flex flex-col justify-center space-y-2 py-2">
+                        <!-- Dynamic options injected here -->
+                    </div>
+
+                    <div class="mt-3 pt-2 border-t border-slate-800 flex justify-between text-[11px] text-amber-400 font-fredoka">
+                        <span>Reward Virtual:</span>
+                        <span id="p-reward-${player.id}">Rp${player.reward.toLocaleString('id-ID')}</span>
+                    </div>
+                `;
+                return card;
+            }
+
+            loadQuestion() {
+                const lvl = gameData[this.currentLevelKey];
+                const q = lvl.questions[this.currentQuestionIdx];
+
+                if (!q) {
+                    this.finishLevel();
+                    return;
+                }
+
+                // Update Header Infos
+                document.getElementById('arena-level-badge').innerText = this.currentLevelKey.toUpperCase();
+                document.getElementById('arena-level-title').innerText = lvl.title;
+                document.getElementById('q-counter').innerText = `PERTANYAAN ${this.currentQuestionIdx + 1} / ${lvl.questions.length}`;
+                document.getElementById('q-type-badge').innerText = q.type.replace('_', ' ');
+                document.getElementById('q-text').innerText = q.question;
+
+                // Update Progress Bar
+                const progPct = Math.round((this.currentQuestionIdx / lvl.questions.length) * 100);
+                document.getElementById('arena-progress-bar').style.width = `${progPct}%`;
+                document.getElementById('arena-progress-text').innerText = `${progPct}%`;
+
+                // Render options for each player viewport
+                this.players.forEach(p => {
+                    const optContainer = document.getElementById(`p-options-area-${p.id}`);
+                    if (!optContainer) return;
+                    optContainer.innerHTML = '';
+
+                    if (q.type === 'multiple_choice' || q.type === 'true_false') {
+                        q.options.forEach((opt) => {
+                            const btn = document.createElement('button');
+                            btn.className = "w-full text-left p-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 hover:border-amber-400 text-xs text-slate-200 transition-all flex items-center justify-between group btn-arcade";
+                            btn.onclick = () => this.submitAnswer(p.id, opt, q);
+                            btn.innerHTML = `
+                                <span>${opt}</span>
+                                <span class="opacity-0 group-hover:opacity-100 text-amber-400 font-bold">💣 PILIH</span>
+                            `;
+                            optContainer.appendChild(btn);
+                        });
+                    } else if (q.type === 'fill_blank') {
+                        const wrapper = document.createElement('div');
+                        wrapper.className = "space-y-3";
+                        const inputId = `blank-input-${p.id}`;
+                        wrapper.innerHTML = `
+                            <input type="text" id="${inputId}" placeholder="Ketik jawaban di sini..." class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-amber-400" />
+                            <button class="btn-submit-blank w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs btn-arcade">
+                                💣 PECAHKAN DENGAN BOM!
+                            </button>
+                        `;
+                        const submitBtn = wrapper.querySelector('.btn-submit-blank');
+                        if (submitBtn) {
+                            submitBtn.onclick = () => this.submitBlankAnswer(p.id);
+                        }
+                        optContainer.appendChild(wrapper);
+                    } else if (q.type === 'drag_word') {
+                        const wrapper = document.createElement('div');
+                        wrapper.className = "space-y-3";
+                        wrapper.innerHTML = `
+                            <div class="text-xs text-slate-400 mb-1">Pilih / pasangkan kata pendorong yang paling tepat:</div>
+                            <div class="words-btn-container flex flex-wrap gap-2 justify-center"></div>
+                        `;
+                        const wordsContainer = wrapper.querySelector('.words-btn-container');
+                        q.words.forEach(w => {
+                            const wordBtn = document.createElement('button');
+                            wordBtn.className = "px-3 py-2 rounded-xl bg-slate-800 hover:bg-amber-500 hover:text-slate-950 border border-slate-700 font-bold text-xs btn-arcade";
+                            wordBtn.innerHTML = `🧩 ${w}`;
+                            wordBtn.onclick = () => this.submitAnswer(p.id, w, q);
+                            wordsContainer.appendChild(wordBtn);
+                        });
+                        optContainer.appendChild(wrapper);
+                    }
+                });
+
+                // Start 90s Timer per Question
+                this.startQuestionTimer(q);
+            }
+
+            startQuestionTimer(q) {
+                if (this.questionTimer) clearInterval(this.questionTimer);
+                this.questionTimeLeft = 90; // 90 seconds
+                const timerEl = document.getElementById('q-timer-text');
+                const timerBox = document.getElementById('question-timer-box');
+
+                const updateQTimerDisplay = () => {
+                    if (timerEl) timerEl.innerText = `${this.questionTimeLeft}s`;
+
+                    if (this.questionTimeLeft <= 15) {
+                        timerBox.className = "px-3 py-1 rounded-full bg-red-600/30 border border-red-500 text-red-300 font-bold text-xs flex items-center space-x-1 animate-pulse";
+                    } else {
+                        timerBox.className = "px-3 py-1 rounded-full bg-red-500/20 border border-red-500/50 text-red-400 font-bold text-xs flex items-center space-x-1";
+                    }
+
+                    if (this.questionTimeLeft <= 0) {
+                        clearInterval(this.questionTimer);
+                        this.questionTimer = null;
+                        // Time's up -> automatically submit timeout incorrect answer
+                        this.submitAnswer(this.players[0].id, '__TIMEOUT__', q);
+                    } else {
+                        this.questionTimeLeft--;
+                    }
+                };
+
+                updateQTimerDisplay();
+                this.questionTimer = setInterval(updateQTimerDisplay, 1000);
+            }
+
+            submitBlankAnswer(playerId) {
+                const input = document.getElementById(`blank-input-${playerId}`);
+                if (!input) return;
+                const q = gameData[this.currentLevelKey].questions[this.currentQuestionIdx];
+                this.submitAnswer(playerId, input.value, q);
+            }
+
+            submitAnswer(playerId, userAns, q) {
+                // Stop 90s question timer immediately
+                if (this.questionTimer) {
+                    clearInterval(this.questionTimer);
+                    this.questionTimer = null;
+                }
+
+                const player = this.players.find(p => p.id === playerId);
+                if (!player) return;
+
+                this.levelTotal++;
+
+                const isTimeout = userAns === '__TIMEOUT__';
+                const cleanUser = String(userAns).trim().toLowerCase();
+                const cleanKey = String(q.answer).trim().toLowerCase();
+
+                const isCorrect = !isTimeout && (cleanUser === cleanKey || cleanUser.includes(cleanKey));
+
+                const card = document.getElementById('feedback-card');
+                const title = document.getElementById('feedback-title');
+                const exp = document.getElementById('feedback-explanation');
+                const icon = document.getElementById('feedback-icon');
+
+                if (isCorrect) {
+                    audioSystem.playCoin();
+                    player.score += 100;
+                    player.reward += 100000;
+                    this.stats.correct++;
+                    this.levelCorrect++;
+
+                    // Visual sparkle
+                    icon.innerText = "🪙";
+                    title.innerText = "JAWABAN BENAR!";
+                    title.className = "text-2xl font-bold font-fredoka text-emerald-400";
+                    exp.innerText = `+100 Poin & Virtual Reward Rp100.000!\n\n${q.explanation}`;
+                    card.className = "game-card p-6 md:p-8 rounded-3xl max-w-md w-full space-y-5 text-center border-2 border-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.4)]";
+                } else {
+                    audioSystem.playExplosion();
+                    player.hp = Math.max(0, player.hp - 1);
+                    this.stats.wrong++;
+
+                    // Visual shake
+                    icon.innerText = "💥";
+                    title.innerText = isTimeout ? "⏰ WAKTU 90 DETIK HABIS!" : "BOOM! JAWABAN KURANG TEPAT!";
+                    title.className = "text-2xl font-bold font-fredoka text-red-500";
+                    exp.innerText = isTimeout 
+                        ? `Waktu 90 detik telah habis. Kunci Jawaban: ${q.answer}\n\n${q.explanation}`
+                        : `Kunci Jawaban Tepat: ${q.answer}\n\n${q.explanation}`;
+                    card.className = "game-card p-6 md:p-8 rounded-3xl max-w-md w-full space-y-5 text-center border-2 border-red-500 animate-shake shadow-[0_0_30px_rgba(239,68,68,0.4)]";
+                }
+
+                // Update UI Score & HP
+                const hpEl = document.getElementById(`p-hp-${player.id}`);
+                const scEl = document.getElementById(`p-score-${player.id}`);
+                const rwEl = document.getElementById(`p-reward-${player.id}`);
+                if (hpEl) hpEl.innerText = player.hp;
+                if (scEl) scEl.innerText = player.score;
+                if (rwEl) rwEl.innerText = `Rp${player.reward.toLocaleString('id-ID')}`;
+
+                this.openModal('modal-feedback');
+            }
+
+            nextQuestion() {
+                this.closeModal('modal-feedback');
+                this.currentQuestionIdx++;
+                this.loadQuestion();
+            }
+
+            finishLevel() {
+                // Check level accuracy rate (must be >= 50% correct)
+                const minReq = Math.ceil(this.levelTotal * 0.5);
+                const passedLevel = this.levelTotal > 0 && (this.levelCorrect >= minReq);
+
+                if (!passedLevel) {
+                    audioSystem.playExplosion();
+                    const desc = document.getElementById('level-failed-desc');
+                    if (desc) {
+                        const pct = Math.round((this.levelCorrect / this.levelTotal) * 100) || 0;
+                        desc.innerText = `Kamu menjawab benar ${this.levelCorrect} dari ${this.levelTotal} soal (${pct}%). Syarat minimal kelulusan level adalah 50% benar.\n\nKamu belum bisa lanjut ke level selanjutnya. Silakan baca ulang materi selama 10 menit lalu ulangi tantangan!`;
+                    }
+                    this.openModal('modal-level-failed');
+                    return;
+                }
+
+                audioSystem.playWin();
+                if (this.currentLevelKey === 'level1') this.currentLevelKey = 'level2';
+                else if (this.currentLevelKey === 'level2') this.currentLevelKey = 'level3';
+                else if (this.currentLevelKey === 'level3') this.currentLevelKey = 'level4';
+                else {
+                    this.showResults();
+                    return;
+                }
+
+                // Show level transition dialog
+                this.navTo('material');
+            }
+
+            retryCurrentLevel() {
+                this.closeModal('modal-level-failed');
+                this.currentQuestionIdx = 0;
+                this.levelCorrect = 0;
+                this.levelTotal = 0;
+                this.navTo('material');
+            }
+
+            showResults() {
+                this.navTo('result');
+                const primaryP = this.players[0];
+                const totalReward = this.players.reduce((acc, p) => acc + p.reward, 0);
+                const totalScore = this.players.reduce((acc, p) => acc + p.score, 0);
+                const totalAns = this.stats.correct + this.stats.wrong;
+                const accuracy = totalAns > 0 ? Math.round((this.stats.correct / totalAns) * 100) : 100;
+
+                document.getElementById('res-student-name').innerText = this.studentName || 'Siswa';
+                document.getElementById('res-student-class').innerText = `Kelas: ${this.studentClass || '-'}`;
+
+                document.getElementById('res-score').innerText = `${totalScore} POIN`;
+                document.getElementById('res-reward').innerText = `Rp${totalReward.toLocaleString('id-ID')}`;
+                document.getElementById('res-correct').innerText = `${this.stats.correct} / ${totalAns}`;
+                document.getElementById('res-accuracy').innerText = `${accuracy}%`;
+
+                // Automatically submit score to teacher's Google Spreadsheet
+                this.submitToSpreadsheet();
+            }
+
+            restartGame() {
+                this.stats = { correct: 0, wrong: 0 };
+                this.players.forEach(p => {
+                    p.hp = 3;
+                    p.score = 0;
+                    p.reward = 0;
+                });
+                this.currentLevelKey = 'level1';
+                this.navTo('mode-select');
+            }
+
+            openModal(modalId) {
+                const el = document.getElementById(modalId);
+                if (el) el.classList.remove('hidden');
+            }
+
+            closeModal(modalId) {
+                const el = document.getElementById(modalId);
+                if (el) el.classList.add('hidden');
+            }
+
+            toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        console.log("Fullscreen request error:", err);
+                    });
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    }
+                }
+            }
+
+            setupKeyboard() {
+                window.addEventListener('keydown', (e) => {
+                    // Quick keyboard support
+                    if (e.key === 'Escape') {
+                        this.closeModal('modal-help');
+                        this.closeModal('modal-objective');
+                        this.closeModal('modal-settings');
+                    }
+                });
+            }
+
+            movePlayer(dir) {
+                // Interactive virtual D-Pad feedback
+                audioSystem.playCoin();
+            }
+
+            interactPlayer() {
+                audioSystem.playCoin();
+            }
+        }
+
+        let app;
+        window.onload = function () {
+            app = new BomberHeroApp();
+            app.init();
+        };
+    </script>
+</body>
+</html>
